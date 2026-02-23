@@ -30,7 +30,7 @@ aiRouter.post("/generate-image", async (req, res, next) => {
         prompt,
         aspect_ratio,
         num_images: 1,
-        output_format: "png",
+        output_format: "jpeg",
       }),
     });
 

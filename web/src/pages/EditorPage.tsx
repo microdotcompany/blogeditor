@@ -181,8 +181,8 @@ export const EditorPage = () => {
 
     const response = await fetch(imageUrl);
     const blob = await response.blob();
-    const filename = `ai-${Date.now()}.png`;
-    const file = new File([blob], filename, { type: "image/png" });
+    const filename = `ai-${Date.now()}.jpg`;
+    const file = new File([blob], filename, { type: "image/jpeg" });
 
     const { displayUrl } = await doUpload(file);
     editor?.chain().focus().setImage({ src: displayUrl, alt }).run();
@@ -233,7 +233,7 @@ export const EditorPage = () => {
       parts.push(`context: "${trimmed}"`);
     }
 
-    return `A blog illustration for a ${parts.join(", ")}. The illustration should be in a clean, modern style.`;
+    return `A minimal blog illustration for a ${parts.join(", ")}.`;
   }, [editor]);
 
   const [aiImageDefaultPrompt, setAiImageDefaultPrompt] = useState("");
