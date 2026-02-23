@@ -1,0 +1,150 @@
+.tiptap-editor {
+  min-height: 60vh;
+  outline: none;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--foreground);
+}
+
+.tiptap-editor > * + * {
+  margin-top: 0.75em;
+}
+
+.tiptap-editor h1 {
+  font-size: 2.25em;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  margin-top: 1.5em;
+}
+
+.tiptap-editor h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin-top: 1.5em;
+}
+
+.tiptap-editor h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 1.25em;
+}
+
+.tiptap-editor h1:first-child,
+.tiptap-editor h2:first-child,
+.tiptap-editor h3:first-child {
+  margin-top: 0;
+}
+
+.tiptap-editor p {
+  line-height: 1.75;
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  padding-left: 1.5em;
+}
+
+.tiptap-editor ul {
+  list-style-type: disc;
+}
+
+.tiptap-editor ol {
+  list-style-type: decimal;
+}
+
+.tiptap-editor li > p {
+  margin: 0;
+}
+
+.tiptap-editor li + li {
+  margin-top: 0.25em;
+}
+
+.tiptap-editor blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.tiptap-editor pre {
+  background: var(--muted);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.875em 1.125em;
+  overflow-x: auto;
+}
+
+.tiptap-editor pre code {
+  font-size: 0.875em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.tiptap-editor code {
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  font-size: 0.875em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.tiptap-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.tiptap-editor img.ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.tiptap-editor table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.tiptap-editor table td,
+.tiptap-editor table th {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  min-width: 100px;
+}
+
+.tiptap-editor table th {
+  font-weight: 600;
+  background: var(--muted);
+  text-align: left;
+}
+
+.tiptap-editor hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+.tiptap-editor a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.tiptap-editor a:hover {
+  opacity: 0.8;
+}
+
+.tiptap-editor p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
