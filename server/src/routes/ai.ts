@@ -35,8 +35,9 @@ aiRouter.post("/generate-image", async (req, res, next) => {
     });
 
     if (!response.ok) {
-      const body = await response.text();
-      res.status(response.status).json({ message: `Image generation failed: ${body}` });
+      const body = await response.json().catch(() => null);
+      const msg = body?.detail?.[0]?.msg || body?.message || "Service temporarily unavailable. Please try again later.";
+      res.status(response.status).json({ message: msg });
       return;
     }
 
