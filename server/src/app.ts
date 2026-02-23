@@ -18,7 +18,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "img-src": ["'self'", "data:", "https://*.fal.media", "https://*.githubusercontent.com"],
+        "img-src": ["*", "data:", "blob:"],
         "connect-src": ["'self'", "https://*.fal.media"],
       },
     },
