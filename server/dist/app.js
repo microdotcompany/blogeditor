@@ -10,7 +10,14 @@ import { githubRouter } from "./routes/github.js";
 import { aiRouter } from "./routes/ai.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const app = express();
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "img-src": ["'self'", "data:", "https://*.fal.media", "https://*.githubusercontent.com"],
+        },
+    },
+}));
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: "50mb" }));
 app.use("/api/auth", authRouter);
