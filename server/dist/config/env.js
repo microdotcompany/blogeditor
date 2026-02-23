@@ -11,7 +11,7 @@ const required = (key) => {
     return value;
 };
 export const env = {
-    PORT: parseInt(process.env.PORT || "3001", 10),
+    PORT: parseInt(process.env.PORT || "3000", 10),
     NODE_ENV: process.env.NODE_ENV || "development",
     CLIENT_URL: required("CLIENT_URL"),
     SERVER_URL: required("SERVER_URL"),
