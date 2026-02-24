@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { X, Upload, Loader2 } from "lucide-react";
@@ -90,18 +90,26 @@ const ObjectFields = ({
 );
 
 export const FrontmatterEditor = ({ data, onChange, onClose, onImageUpload, isUploading }: FrontmatterEditorProps) => {
+  const [localData, setLocalData] = useState(data);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const fields: FrontmatterField[] = Object.entries(data).map(([key, value]) => ({
+  // Sync local state when data prop changes (e.g., after mode switch)
+  useEffect(() => {
+    setLocalData(data);
+  }, [data]);
+
+  const fields: FrontmatterField[] = Object.entries(localData).map(([key, value]) => ({
     key,
     value,
     type: inferType(key, value),
   }));
 
   const updateField = (key: string, value: unknown) => {
-    onChange({ ...data, [key]: value });
+    const newData = { ...localData, [key]: value };
+    setLocalData(newData);
+    onChange(newData);
   };
 
   const handleImageUpload = async (key: string, file: File) => {
