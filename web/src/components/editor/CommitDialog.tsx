@@ -75,7 +75,7 @@ export const CommitDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Commit Changes</DialogTitle>
           <DialogDescription>
