@@ -1,12 +1,14 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router";
 import type { Editor } from "@tiptap/react";
 import { toast } from "sonner";
-import { ArrowLeft, Settings, Loader2, Eye, Code } from "lucide-react";
+import { ArrowLeft, ExternalLink, Settings, Loader2, Eye, Code } from "lucide-react";
+import { apiClient, ApiError } from "@/api/client";
 import { useFileContent } from "@/hooks/useFileContent";
 import { useCommit } from "@/hooks/useCommit";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useImageConfig } from "@/hooks/useImageConfig";
+import { useBranches } from "@/hooks/useBranches";
 import { BlogEditor } from "@/components/editor/BlogEditor";
 import { FrontmatterEditor } from "@/components/editor/FrontmatterEditor";
 import { CommitDialog } from "@/components/editor/CommitDialog";
@@ -15,6 +17,38 @@ import { ImageGenerateModal } from "@/components/editor/ImageGenerateModal";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseFrontmatter, serializeFrontmatter } from "@/lib/frontmatter";
+import type { GitHubRepo } from "@blogeditor/shared";
+
+const CONTENT_PREFIXES = [
+  "src/content/",
+  "content/",
+  "src/pages/",
+  "pages/",
+  "_posts/",
+];
+
+const deriveArticleUrl = (homepage: string, path: string, frontmatter: Record<string, unknown>): string => {
+  const slug = frontmatter.slug as string | undefined;
+  if (slug) {
+    const base = homepage.replace(/\/$/, "");
+    const slugPath = slug.startsWith("/") ? slug : `/${slug}`;
+    return `${base}${slugPath}`;
+  }
+
+  let stripped = path;
+  for (const prefix of CONTENT_PREFIXES) {
+    if (stripped.startsWith(prefix)) {
+      stripped = stripped.slice(prefix.length);
+      break;
+    }
+  }
+
+  stripped = stripped.replace(/\.(md|mdx|astro|html)$/, "");
+  stripped = stripped.replace(/\/index$/, "");
+
+  const base = homepage.replace(/\/$/, "");
+  return `${base}/${stripped}`;
+};
 
 export const EditorPage = () => {
   const { owner, repo, "*": filePath } = useParams();
@@ -31,6 +65,16 @@ export const EditorPage = () => {
   const { commit, isCommitting } = useCommit();
   const { upload, isUploading } = useImageUpload();
   const imageConfig = useImageConfig(owner!, repo!, branch);
+  const { branches, fetchBranches, createBranch } = useBranches();
+  const [homepage, setHomepage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!owner || !repo) return;
+    fetchBranches(owner, repo);
+    apiClient<GitHubRepo>(`/api/github/repos/${owner}/${repo}`).then(
+      (data) => setHomepage(data.homepage)
+    );
+  }, [owner, repo, fetchBranches]);
 
   const [editor, setEditor] = useState<Editor | null>(null);
   const [showCommitDialog, setShowCommitDialog] = useState(false);
@@ -133,20 +177,40 @@ export const EditorPage = () => {
     [upload, owner, repo, branch, imageConfig]
   );
 
-  const handleCommit = async (message: string) => {
+  const handleCommit = async (message: string, targetBranch: string, isNewBranch: boolean) => {
     try {
+      let commitSha = sha;
+
+      if (isNewBranch) {
+        await createBranch(owner!, repo!, targetBranch, branch);
+      } else if (targetBranch !== branch) {
+        try {
+          const res = await apiClient<{ sha: string }>(
+            `/api/github/repos/${owner}/${repo}/contents/${filePath}?ref=${targetBranch}`
+          );
+          commitSha = res.sha;
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 404) {
+            commitSha = "";
+          } else {
+            throw err;
+          }
+        }
+      }
+
       const result = await commit({
         owner: owner!,
         repo: repo!,
         path: filePath!,
         content: getFullContent(),
         message,
-        sha,
-        branch,
+        sha: commitSha,
+        branch: targetBranch,
       });
       setSha(result!.content.sha);
       setShowCommitDialog(false);
       toast.success("Changes committed successfully");
+      fetchBranches(owner!, repo!);
     } catch {
       toast.error("Failed to commit changes");
     }
@@ -321,9 +385,24 @@ export const EditorPage = () => {
             </Tooltip>
           </div>
 
+          {homepage && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={deriveArticleUrl(homepage, filePath!, frontmatterRef.current)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>Preview on website</TooltipContent>
+            </Tooltip>
+          )}
+
           <Button
             size="sm"
-            variant="outline"
             className="h-8 text-xs"
             onClick={() => setShowCommitDialog(true)}
           >
@@ -405,6 +484,7 @@ export const EditorPage = () => {
         onCommit={handleCommit}
         filePath={filePath!}
         branch={branch}
+        branches={branches}
         isCommitting={isCommitting}
       />
 

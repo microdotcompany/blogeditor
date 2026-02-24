@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import type { GitHubRepo } from "@blogeditor/shared";
-import { Star } from "lucide-react";
+import { ExternalLink, Star } from "lucide-react";
 
 interface RepoCardProps {
   repo: GitHubRepo;
@@ -83,7 +83,21 @@ export const RepoCard = ({ repo, isStarred, onToggleStar }: RepoCardProps) => {
             {repo.language}
           </span>
         )}
-        <span className="ml-auto">{timeAgo(repo.updated_at)}</span>
+        <span className="ml-auto flex items-center gap-2">
+          {repo.homepage && (
+            <a
+              href={repo.homepage}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Preview
+            </a>
+          )}
+          {timeAgo(repo.updated_at)}
+        </span>
       </div>
     </div>
   );

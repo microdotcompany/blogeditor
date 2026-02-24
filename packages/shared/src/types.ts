@@ -30,6 +30,7 @@ export interface GitHubRepo {
   description: string | null;
   private: boolean;
   html_url: string;
+  homepage: string | null;
   default_branch: string;
   updated_at: string;
   language: string | null;

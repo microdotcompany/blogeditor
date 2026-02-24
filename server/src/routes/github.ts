@@ -40,6 +40,17 @@ githubRouter.get("/repos", async (req, res, next) => {
   }
 });
 
+githubRouter.get("/repos/:owner/:repo", async (req, res, next) => {
+  try {
+    const { owner, repo } = req.params;
+    const response = await githubApi(`/repos/${owner}/${repo}`, req.user!.accessToken);
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
 githubRouter.get("/repos/:owner/:repo/branches", async (req, res, next) => {
   try {
     const { owner, repo } = req.params;
@@ -100,6 +111,44 @@ githubRouter.get("/repos/:owner/:repo/raw/:branch/*", async (req, res, next) => 
 
     const buffer = Buffer.from(await response.arrayBuffer());
     res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+githubRouter.post("/repos/:owner/:repo/branches", async (req, res, next) => {
+  try {
+    const { owner, repo } = req.params;
+    const { name, sourceBranch } = req.body;
+
+    const refResponse = await githubApi(
+      `/repos/${owner}/${repo}/git/ref/heads/${sourceBranch}`,
+      req.user!.accessToken
+    );
+    if (!refResponse.ok) {
+      const err = await refResponse.json();
+      res.status(refResponse.status).json(err);
+      return;
+    }
+    const refData = await refResponse.json();
+    const sha = refData.object.sha;
+
+    const createResponse = await githubApi(
+      `/repos/${owner}/${repo}/git/refs`,
+      req.user!.accessToken,
+      {
+        method: "POST",
+        body: JSON.stringify({ ref: `refs/heads/${name}`, sha }),
+      }
+    );
+    const createData = await createResponse.json();
+
+    if (!createResponse.ok) {
+      res.status(createResponse.status).json(createData);
+      return;
+    }
+
+    res.status(201).json(createData);
   } catch (err) {
     next(err);
   }
