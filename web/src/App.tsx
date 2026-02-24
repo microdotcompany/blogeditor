@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
@@ -10,22 +10,34 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { BrowserPage } from "@/pages/BrowserPage";
 import { EditorPage } from "@/pages/EditorPage";
 
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LoginPage />,
+  },
+  {
+    path: "/auth/callback",
+    element: <AuthCallback />,
+  },
+  {
+    element: <AppLayout />,
+    children: [
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: "/dashboard", element: <DashboardPage /> },
+          { path: "/repos/:owner/:repo", element: <BrowserPage /> },
+          { path: "/repos/:owner/:repo/edit/*", element: <EditorPage /> },
+        ],
+      },
+    ],
+  },
+]);
+
 export const App = () => (
   <AuthProvider>
     <TooltipProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route element={<AppLayout />}>
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/repos/:owner/:repo" element={<BrowserPage />} />
-              <Route path="/repos/:owner/:repo/edit/*" element={<EditorPage />} />
-            </Route>
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <RouterProvider router={router} />
       <Toaster />
     </TooltipProvider>
   </AuthProvider>

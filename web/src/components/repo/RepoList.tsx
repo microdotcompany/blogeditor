@@ -3,10 +3,10 @@ import type { GitHubRepo } from "@blogeditor/shared";
 import { ChevronRight } from "lucide-react";
 import { RepoCard } from "./RepoCard";
 
-const BLOG_FRAMEWORKS = ["astro", "gatsby", "hugo", "jekyll", "eleventy", "nextjs"];
+const BLOG_TOPICS = ["astro", "gatsby", "hugo", "jekyll", "eleventy", "nextjs", "static"];
 
-const isBlogFramework = (repo: GitHubRepo) =>
-  repo.topics?.some((t) => BLOG_FRAMEWORKS.includes(t.toLowerCase()));
+const isBlogRelated = (repo: GitHubRepo) =>
+  repo.topics?.some((t) => BLOG_TOPICS.includes(t.toLowerCase()));
 
 interface RepoListProps {
   repos: GitHubRepo[];
@@ -22,7 +22,7 @@ export const RepoList = ({ repos, starred, onToggleStar }: RepoListProps) => {
     const others: GitHubRepo[] = [];
 
     for (const repo of repos) {
-      if (starred.has(repo.full_name) || isBlogFramework(repo)) {
+      if (starred.has(repo.full_name) || isBlogRelated(repo)) {
         primary.push(repo);
       } else {
         others.push(repo);
