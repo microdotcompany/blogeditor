@@ -34,6 +34,7 @@ export interface GitHubRepo {
   default_branch: string;
   updated_at: string;
   language: string | null;
+  topics: string[];
 }
 
 export interface GitHubBranch {
