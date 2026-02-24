@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams, useBlocker } from "react-router";
 import type { Editor } from "@tiptap/react";
 import { toast } from "sonner";
-import { ArrowLeft, ExternalLink, Settings, Loader2, Eye, Code } from "lucide-react";
+import { ArrowLeft, ExternalLink, Settings, Loader2, Eye, Code, ChevronDown, Undo2 } from "lucide-react";
 import { apiClient, ApiError } from "@/api/client";
 import { useFileContent } from "@/hooks/useFileContent";
 import { useCommit } from "@/hooks/useCommit";
@@ -18,6 +18,12 @@ import { ImageGenerateModal } from "@/components/editor/ImageGenerateModal";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { parseFrontmatter, serializeFrontmatter } from "@/lib/frontmatter";
 import type { GitHubRepo } from "@blogeditor/shared";
 
@@ -299,6 +305,20 @@ export const EditorPage = () => {
     }
   };
 
+  const handleDiscard = useCallback(() => {
+    clearDraft();
+    frontmatterRef.current = parsed.frontmatter;
+    setFmVersion((v) => v + 1);
+    setWorkingBody(null);
+    editorMountedRef.current = false;
+    setRawContent(content);
+    setHasChanges(false);
+    if (mode === "raw") {
+      setMode("visual");
+    }
+    toast.success("Changes discarded");
+  }, [clearDraft, parsed.frontmatter, content, mode]);
+
   const handleImageUpload = async (file: File, alt: string) => {
     try {
       const { displayUrl } = await doUpload(file);
@@ -484,17 +504,39 @@ export const EditorPage = () => {
             </Tooltip>
           )}
 
-          <Button
-            size="sm"
-            className="h-8 text-xs"
-            disabled={!hasChanges}
-            onClick={() => setShowCommitDialog(true)}
-          >
-            {isCommitting ? (
-              <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-            ) : null}
-            Commit
-          </Button>
+          <div className="flex items-center">
+            <Button
+              size="sm"
+              className="h-8 rounded-r-none text-xs"
+              disabled={!hasChanges}
+              onClick={() => setShowCommitDialog(true)}
+            >
+              {isCommitting ? (
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+              ) : null}
+              Commit
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  className="h-8 w-7 rounded-l-none border-l border-primary-foreground/20 px-0"
+                  disabled={!hasChanges}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={handleDiscard}
+                >
+                  <Undo2 className="h-4 w-4" />
+                  Discard changes
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {hasFrontmatter && Object.keys(frontmatterRef.current).length > 0 && (
             <Tooltip>
