@@ -27,6 +27,14 @@ export const LoginPage = () => {
         </p>
       </div>
       <LoginButton />
+      <a
+        href="https://github.com/microdotcompany/blogeditor"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-4 text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+      >
+        Source on GitHub
+      </a>
     </div>
   );
 };
