@@ -574,6 +574,8 @@ export const EditorPage = () => {
         branch={branch}
         branches={branches}
         isCommitting={isCommitting}
+        originalContent={content}
+        newContent={getFullContent()}
       />
 
       <ImageUploadModal
