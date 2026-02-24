@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { DiffViewer } from "./DiffViewer";
 
 interface CommitDialogProps {
   open: boolean;
@@ -26,6 +27,8 @@ interface CommitDialogProps {
   branch: string;
   branches: GitHubBranch[];
   isCommitting: boolean;
+  originalContent: string;
+  newContent: string;
 }
 
 export const CommitDialog = ({
@@ -36,6 +39,8 @@ export const CommitDialog = ({
   branch,
   branches,
   isCommitting,
+  originalContent,
+  newContent,
 }: CommitDialogProps) => {
   const filename = filePath.split("/").pop() || filePath;
   const [message, setMessage] = useState(`Update ${filename}`);
@@ -82,6 +87,11 @@ export const CommitDialog = ({
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">File</label>
             <div className="rounded-md bg-muted px-3 py-2 font-mono text-sm">{filePath}</div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">Changes</label>
+            <DiffViewer originalContent={originalContent} newContent={newContent} />
           </div>
 
           <div className="space-y-2">
