@@ -18,23 +18,27 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
       - name: Deploy via rsync
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: -avz --delete --exclude='node_modules' --exclude='.git' --exclude='.env' --exclude='.github'
-          path: ./
-          remote_path: /home/ubuntu/source/
-          remote_host: ${{ secrets.EC2_HOST }}
-          remote_user: ubuntu
-          remote_key: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='.github' \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/source/
 
       - name: Install deps and restart
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+        run: |
+          ssh -i ~/.ssh/deploy_key ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ubuntu/source
             npm ci --omit=dev
             pm2 reload ecosystem.config.cjs --env production
+          EOF
