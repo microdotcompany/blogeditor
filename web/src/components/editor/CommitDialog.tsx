@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { GitHubBranch } from "@blogeditor/shared";
-import { ChevronDown, GitBranch, Plus, Check } from "lucide-react";
+import { ChevronDown, GitBranch, Plus, Check, Undo2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ interface CommitDialogProps {
   isCommitting: boolean;
   originalContent: string;
   newContent: string;
+  onDiscard: () => void;
 }
 
 export const CommitDialog = ({
@@ -41,6 +42,7 @@ export const CommitDialog = ({
   isCommitting,
   originalContent,
   newContent,
+  onDiscard,
 }: CommitDialogProps) => {
   const filename = filePath.split("/").pop() || filePath;
   const [message, setMessage] = useState(`Update ${filename}`);
@@ -75,7 +77,7 @@ export const CommitDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Commit Changes</DialogTitle>
           <DialogDescription>
@@ -83,18 +85,20 @@ export const CommitDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-4">
+          <div className="space-y-2 shrink-0">
             <label className="text-sm text-muted-foreground">File</label>
             <div className="rounded-md bg-muted px-3 py-2 font-mono text-sm">{filePath}</div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Changes</label>
-            <DiffViewer originalContent={originalContent} newContent={newContent} />
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <label className="shrink-0 text-sm text-muted-foreground">Changes</label>
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-md border bg-muted/30">
+              <DiffViewer originalContent={originalContent} newContent={newContent} />
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="shrink-0 space-y-2">
             <label className="text-sm text-muted-foreground">Branch</label>
             {isCreatingNew ? (
               <div className="flex gap-2">
@@ -155,7 +159,7 @@ export const CommitDialog = ({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="shrink-0 space-y-2">
             <label className="text-sm text-muted-foreground">Commit message</label>
             <Input
               value={message}
@@ -165,7 +169,17 @@ export const CommitDialog = ({
             />
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex shrink-0 justify-end gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => { onClose(); onDiscard(); }}
+            >
+              <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+              Discard
+            </Button>
+            <div className="flex-1" />
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>

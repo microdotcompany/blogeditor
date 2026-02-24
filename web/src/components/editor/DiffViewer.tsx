@@ -75,7 +75,7 @@ export const DiffViewer = ({ originalContent, newContent }: DiffViewerProps) => 
   }
 
   return (
-    <div className="max-h-64 overflow-auto rounded-md border bg-muted/30 font-mono text-xs">
+    <div className="font-mono text-xs">
       {displayLines.map((item, index) => {
         if (item === "separator") {
           return (

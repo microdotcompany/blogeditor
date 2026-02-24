@@ -618,6 +618,7 @@ export const EditorPage = () => {
         isCommitting={isCommitting}
         originalContent={content}
         newContent={getFullContent()}
+        onDiscard={handleDiscard}
       />
 
       <ImageUploadModal
