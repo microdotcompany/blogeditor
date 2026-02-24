@@ -42,7 +42,8 @@ const inferType = (key: string, value: unknown): FrontmatterField["type"] => {
     (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value))
   )
     return "date";
-  if (key.toLowerCase().includes("image") || key.toLowerCase().includes("img")) return "image";
+  const lk = key.toLowerCase();
+  if ((lk.includes("image") || lk.includes("img")) && !lk.endsWith("alt")) return "image";
   return "text";
 };
 
