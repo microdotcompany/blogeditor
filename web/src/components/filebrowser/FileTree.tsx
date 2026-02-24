@@ -8,6 +8,7 @@ interface FileTreeProps {
   owner: string;
   repo: string;
   branch: string;
+  onDuplicate?: () => void;
 }
 
 const buildTree = (items: TreeItem[]): TreeNode[] => {
@@ -44,7 +45,7 @@ const buildTree = (items: TreeItem[]): TreeNode[] => {
   return root;
 };
 
-export const FileTree = ({ items, owner, repo, branch }: FileTreeProps) => {
+export const FileTree = ({ items, owner, repo, branch, onDuplicate }: FileTreeProps) => {
   const tree = buildTree(items);
 
   const initialExpanded = useMemo(() => {
@@ -62,6 +63,7 @@ export const FileTree = ({ items, owner, repo, branch }: FileTreeProps) => {
           repo={repo}
           branch={branch}
           initialExpanded={initialExpanded}
+          onDuplicate={onDuplicate}
         />
       ))}
     </div>

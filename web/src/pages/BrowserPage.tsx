@@ -16,7 +16,7 @@ export const BrowserPage = () => {
   const { owner, repo } = useParams<{ owner: string; repo: string }>();
   const [branches, setBranches] = useState<GitHubBranch[]>([]);
   const [branch, setBranch] = useState("");
-  const { tree, isLoading, error } = useRepoTree(owner!, repo!, branch);
+  const { tree, isLoading, error, refetch } = useRepoTree(owner!, repo!, branch);
 
   useEffect(() => {
     if (!owner || !repo) return;
@@ -76,7 +76,7 @@ export const BrowserPage = () => {
       {error && <p className="text-destructive">{error}</p>}
       {!isLoading && !error && tree.length > 0 && (
         <div className="rounded-lg border p-2">
-          <FileTree items={tree} owner={owner!} repo={repo!} branch={branch} />
+          <FileTree items={tree} owner={owner!} repo={repo!} branch={branch} onDuplicate={refetch} />
         </div>
       )}
     </div>
