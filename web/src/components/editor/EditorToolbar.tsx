@@ -20,16 +20,19 @@ interface EditorToolbarProps {
   editor: Editor;
   onImageClick: () => void;
   onAiImageClick: () => void;
+  aiImageEnabled: boolean;
 }
 
 const ToolbarButton = ({
   onClick,
   isActive,
+  disabled,
   tooltip,
   children,
 }: {
   onClick: () => void;
   isActive?: boolean;
+  disabled?: boolean;
   tooltip: string;
   children: React.ReactNode;
 }) => (
@@ -37,11 +40,14 @@ const ToolbarButton = ({
     <TooltipTrigger asChild>
       <button
         type="button"
-        onClick={onClick}
+        onClick={disabled ? undefined : onClick}
+        disabled={disabled}
         className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-          isActive
-            ? "bg-foreground/10 text-foreground"
-            : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+          disabled
+            ? "cursor-not-allowed text-muted-foreground/40"
+            : isActive
+              ? "bg-foreground/10 text-foreground"
+              : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
         }`}
       >
         {children}
@@ -57,7 +63,7 @@ const ToolbarSeparator = () => (
   <div className="mx-1 h-5 w-px bg-border" />
 );
 
-export const EditorToolbar = ({ editor, onImageClick, onAiImageClick }: EditorToolbarProps) => (
+export const EditorToolbar = ({ editor, onImageClick, onAiImageClick, aiImageEnabled }: EditorToolbarProps) => (
   <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur-sm">
     <ToolbarButton
       onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -147,7 +153,11 @@ export const EditorToolbar = ({ editor, onImageClick, onAiImageClick }: EditorTo
       <Image className="h-4 w-4" />
     </ToolbarButton>
 
-    <ToolbarButton onClick={onAiImageClick} tooltip="AI Generate Image">
+    <ToolbarButton
+      onClick={onAiImageClick}
+      disabled={!aiImageEnabled}
+      tooltip={aiImageEnabled ? "AI Generate Image" : "Coming soon"}
+    >
       <Sparkles className="h-4 w-4" />
     </ToolbarButton>
 

@@ -18,7 +18,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 export const DashboardPage = () => {
   const { user } = useAuth();
   const [orgs, setOrgs] = useState<GitHubOrg[]>([]);
-  const [selectedOrg, setSelectedOrg] = useState<string | undefined>();
+  const [selectedOrg, setSelectedOrg] = useState<string | undefined>(
+    () => localStorage.getItem("lastOrg") ?? undefined
+  );
   const { repos, isLoading, error } = useGitHubRepos(selectedOrg);
   const { starred, toggle } = useStarredRepos();
 
@@ -33,6 +35,14 @@ export const DashboardPage = () => {
     };
     fetchOrgs();
   }, []);
+
+  useEffect(() => {
+    if (selectedOrg) {
+      localStorage.setItem("lastOrg", selectedOrg);
+    } else {
+      localStorage.removeItem("lastOrg");
+    }
+  }, [selectedOrg]);
 
   const currentLabel = selectedOrg || user?.username || "Personal";
   const currentAvatar = selectedOrg

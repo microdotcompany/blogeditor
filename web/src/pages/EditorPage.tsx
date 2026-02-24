@@ -47,6 +47,10 @@ const deriveArticleUrl = (homepage: string, path: string, frontmatter: Record<st
   stripped = stripped.replace(/\/index$/, "");
 
   const base = homepage.replace(/\/$/, "");
+  const basePath = new URL(base).pathname.replace(/^\//, "");
+  if (basePath && stripped.startsWith(basePath + "/")) {
+    stripped = stripped.slice(basePath.length + 1);
+  }
   return `${base}/${stripped}`;
 };
 
@@ -444,6 +448,7 @@ export const EditorPage = () => {
                 isMarkdown={isMarkdown}
                 onImageClick={() => setShowImageModal(true)}
                 onAiImageClick={openAiImageModal}
+                aiImageEnabled={owner === "microdotcompany"}
                 onImageUpload={handleDropUpload}
                 onEditorReady={handleEditorReady}
               />

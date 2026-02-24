@@ -10,11 +10,12 @@ interface BlogEditorProps {
   isMarkdown: boolean;
   onImageClick: () => void;
   onAiImageClick: () => void;
+  aiImageEnabled: boolean;
   onImageUpload: (file: File) => Promise<string | null>;
   onEditorReady: (editor: ReturnType<typeof useEditor>) => void;
 }
 
-export const BlogEditor = ({ content, isMarkdown, onImageClick, onAiImageClick, onImageUpload, onEditorReady }: BlogEditorProps) => {
+export const BlogEditor = ({ content, isMarkdown, onImageClick, onAiImageClick, aiImageEnabled, onImageUpload, onEditorReady }: BlogEditorProps) => {
   const imageUploadExtension = useMemo(
     () =>
       Extension.create({
@@ -51,7 +52,7 @@ export const BlogEditor = ({ content, isMarkdown, onImageClick, onAiImageClick, 
   return (
     <>
       <EditorContent editor={editor} />
-      <EditorToolbar editor={editor} onImageClick={onImageClick} onAiImageClick={onAiImageClick} />
+      <EditorToolbar editor={editor} onImageClick={onImageClick} onAiImageClick={onAiImageClick} aiImageEnabled={aiImageEnabled} />
     </>
   );
 };
