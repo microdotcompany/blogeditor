@@ -13,9 +13,10 @@ interface BlogEditorProps {
   aiImageEnabled: boolean;
   onImageUpload: (file: File) => Promise<string | null>;
   onEditorReady: (editor: ReturnType<typeof useEditor>) => void;
+  onUpdate?: () => void;
 }
 
-export const BlogEditor = ({ content, isMarkdown, onImageClick, onAiImageClick, aiImageEnabled, onImageUpload, onEditorReady }: BlogEditorProps) => {
+export const BlogEditor = ({ content, isMarkdown, onImageClick, onAiImageClick, aiImageEnabled, onImageUpload, onEditorReady, onUpdate }: BlogEditorProps) => {
   const imageUploadExtension = useMemo(
     () =>
       Extension.create({
@@ -30,6 +31,7 @@ export const BlogEditor = ({ content, isMarkdown, onImageClick, onAiImageClick, 
   const editor = useEditor({
     extensions: [...getExtensions(), imageUploadExtension],
     content,
+    onUpdate: onUpdate,
     editorProps: {
       attributes: {
         class: "tiptap-editor focus:outline-none",

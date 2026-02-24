@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router";
+import { useParams, useNavigate, useSearchParams, useBlocker } from "react-router";
 import type { Editor } from "@tiptap/react";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, Settings, Loader2, Eye, Code } from "lucide-react";
@@ -9,12 +9,14 @@ import { useCommit } from "@/hooks/useCommit";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useImageConfig } from "@/hooks/useImageConfig";
 import { useBranches } from "@/hooks/useBranches";
+import { useEditorDraft } from "@/hooks/useEditorDraft";
 import { BlogEditor } from "@/components/editor/BlogEditor";
 import { FrontmatterEditor } from "@/components/editor/FrontmatterEditor";
 import { CommitDialog } from "@/components/editor/CommitDialog";
 import { ImageUploadModal } from "@/components/editor/ImageUploadModal";
 import { ImageGenerateModal } from "@/components/editor/ImageGenerateModal";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseFrontmatter, serializeFrontmatter } from "@/lib/frontmatter";
 import type { GitHubRepo } from "@blogeditor/shared";
@@ -70,6 +72,9 @@ export const EditorPage = () => {
   const { upload, isUploading } = useImageUpload();
   const imageConfig = useImageConfig(owner!, repo!, branch);
   const { branches, fetchBranches, createBranch } = useBranches();
+  const { loadDraft, saveDraft, saveDraftImmediate, clearDraft } = useEditorDraft(
+    owner!, repo!, branch, filePath!
+  );
   const [homepage, setHomepage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -87,6 +92,7 @@ export const EditorPage = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [mode, setMode] = useState<"visual" | "raw">("visual");
   const [rawContent, setRawContent] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
 
   const imageUrlMap = useRef(new Map<string, string>());
 
@@ -99,6 +105,10 @@ export const EditorPage = () => {
     return parseFrontmatter(content);
   }, [content, hasFrontmatter]);
 
+  // Working body: tracks editor body across mode switches and drafts.
+  // null = use parsed.body from fetch (no draft / no edits yet)
+  const [workingBody, setWorkingBody] = useState<string | null>(null);
+
   const frontmatterRef = useRef<Record<string, unknown>>(parsed.frontmatter);
   frontmatterRef.current = frontmatterRef.current === parsed.frontmatter
     ? parsed.frontmatter
@@ -107,12 +117,32 @@ export const EditorPage = () => {
   const [lastContent, setLastContent] = useState(content);
   if (content !== lastContent) {
     frontmatterRef.current = parsed.frontmatter;
+    setWorkingBody(null);
     setLastContent(content);
   }
+
+  // Load draft from localStorage on mount (once content is fetched)
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    if (isLoading || draftLoadedRef.current) return;
+    draftLoadedRef.current = true;
+    const draft = loadDraft();
+    if (draft && draft !== content) {
+      const { frontmatter, body } = parseFrontmatter(draft);
+      if (hasFrontmatter && Object.keys(frontmatter).length > 0) {
+        frontmatterRef.current = frontmatter;
+      }
+      setWorkingBody(body);
+      setHasChanges(true);
+    }
+  }, [isLoading, content, loadDraft, hasFrontmatter]);
+
+  const editorBody = workingBody ?? parsed.body;
 
   const handleFrontmatterChange = useCallback((data: Record<string, unknown>) => {
     frontmatterRef.current = data;
     setFmVersion((v) => v + 1);
+    setHasChanges(true);
   }, []);
 
   const [fmVersion, setFmVersion] = useState(0);
@@ -136,21 +166,27 @@ export const EditorPage = () => {
     if (next === mode) return;
     if (next === "raw") {
       const body = rewriteImageUrls(getEditorBody());
+      let raw: string;
       if (hasFrontmatter && Object.keys(frontmatterRef.current).length > 0) {
-        setRawContent(serializeFrontmatter(frontmatterRef.current, body));
+        raw = serializeFrontmatter(frontmatterRef.current, body);
       } else {
-        setRawContent(body);
+        raw = body;
       }
-    } else if (editor) {
+      setRawContent(raw);
+      saveDraftImmediate(raw);
+    } else {
+      // raw → visual: update workingBody so BlogEditor mounts with correct content
       const { frontmatter, body } = parseFrontmatter(rawContent);
       if (hasFrontmatter && Object.keys(frontmatter).length > 0) {
         frontmatterRef.current = frontmatter;
         setFmVersion((v) => v + 1);
       }
-      editor.commands.setContent(body);
+      setWorkingBody(body);
+      saveDraftImmediate(rawContent);
+      editorMountedRef.current = false;
     }
     setMode(next);
-  }, [mode, editor, rawContent, hasFrontmatter, getEditorBody, rewriteImageUrls]);
+  }, [mode, rawContent, hasFrontmatter, getEditorBody, rewriteImageUrls, saveDraftImmediate]);
 
   const getFullContent = useCallback(() => {
     if (mode === "raw") return rewriteImageUrls(rawContent);
@@ -163,6 +199,48 @@ export const EditorPage = () => {
     }
     return serializeFrontmatter(frontmatterRef.current, rewritten);
   }, [mode, rawContent, getEditorBody, hasFrontmatter, rewriteImageUrls]);
+
+  // Skip the programmatic setContent onUpdate that fires when BlogEditor mounts
+  const editorMountedRef = useRef(false);
+
+  // Save draft to localStorage on visual-mode edits
+  const handleEditorUpdate = useCallback(() => {
+    if (!editorMountedRef.current) {
+      editorMountedRef.current = true;
+      return;
+    }
+    setHasChanges(true);
+    const body = getEditorBody();
+    if (!body) return;
+    const full = hasFrontmatter && Object.keys(frontmatterRef.current).length > 0
+      ? serializeFrontmatter(frontmatterRef.current, body)
+      : body;
+    saveDraft(full);
+  }, [getEditorBody, hasFrontmatter, saveDraft]);
+
+  // Save draft to localStorage on raw-mode edits
+  const handleRawChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const val = e.target.value;
+      setRawContent(val);
+      setHasChanges(true);
+      saveDraft(val);
+    },
+    [saveDraft],
+  );
+
+  // Navigation guard: useBlocker
+  const blocker = useBlocker(hasChanges);
+
+  // Browser tab close / refresh guard
+  useEffect(() => {
+    if (!hasChanges) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasChanges]);
 
   const doUpload = useCallback(
     async (file: File) => {
@@ -212,6 +290,8 @@ export const EditorPage = () => {
         branch: targetBranch,
       });
       setSha(result!.content.sha);
+      clearDraft();
+      setHasChanges(false);
       setShowCommitDialog(false);
       toast.success("Changes committed successfully");
       fetchBranches(owner!, repo!);
@@ -408,6 +488,7 @@ export const EditorPage = () => {
           <Button
             size="sm"
             className="h-8 text-xs"
+            disabled={!hasChanges}
             onClick={() => setShowCommitDialog(true)}
           >
             {isCommitting ? (
@@ -444,20 +525,21 @@ export const EditorPage = () => {
           {mode === "visual" ? (
             <div className="mx-auto max-w-2xl px-6 py-10">
               <BlogEditor
-                content={parsed.body}
+                content={editorBody}
                 isMarkdown={isMarkdown}
                 onImageClick={() => setShowImageModal(true)}
                 onAiImageClick={openAiImageModal}
                 aiImageEnabled={owner === "microdotcompany"}
                 onImageUpload={handleDropUpload}
                 onEditorReady={handleEditorReady}
+                onUpdate={handleEditorUpdate}
               />
             </div>
           ) : (
             <div className="mx-auto max-w-4xl px-6 py-6">
               <textarea
                 value={rawContent}
-                onChange={(e) => setRawContent(e.target.value)}
+                onChange={handleRawChange}
                 spellCheck={false}
                 className="min-h-[80vh] w-full resize-none rounded-lg border bg-background p-4 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
@@ -506,6 +588,35 @@ export const EditorPage = () => {
         onInsert={handleAiImageInsert}
         defaultPrompt={aiImageDefaultPrompt}
       />
+
+      {/* Unsaved changes navigation guard */}
+      <Dialog
+        open={blocker.state === "blocked"}
+        onOpenChange={(open) => { if (!open) blocker.reset?.(); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unsaved changes</DialogTitle>
+            <DialogDescription>
+              You have uncommitted edits. Do you want to discard them?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => blocker.reset?.()}>
+              Keep editing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                clearDraft();
+                blocker.proceed?.();
+              }}
+            >
+              Discard changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
