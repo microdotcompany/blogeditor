@@ -19,7 +19,7 @@ export const Header = () => {
       <div className="mx-auto flex h-14 max-w-screen-xl items-center justify-between px-4">
         <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-lg font-semibold">
           <img src="/images/quill.svg" alt="" className="h-6 w-6" />
-          Blog Editor
+          Blogger
         </button>
 
         {isAuthenticated && user && (

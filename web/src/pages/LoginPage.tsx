@@ -21,7 +21,7 @@ export const LoginPage = () => {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6">
       <div className="text-center">
         <img src="/images/quill.svg" alt="" className="mx-auto mb-4 h-12 w-12" />
-        <h1 className="text-4xl font-bold">Blog Editor</h1>
+        <h1 className="text-4xl font-bold">Blogger</h1>
         <p className="mt-2 text-muted-foreground">
           Edit your static site files with a rich text editor
         </p>
