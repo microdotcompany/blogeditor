@@ -315,9 +315,11 @@ export const EditorPage = () => {
     setHasChanges(false);
     if (mode === "raw") {
       setMode("visual");
+    } else if (editor) {
+      editor.commands.setContent(parsed.body);
     }
     toast.success("Changes discarded");
-  }, [clearDraft, parsed.frontmatter, content, mode]);
+  }, [clearDraft, parsed.frontmatter, parsed.body, content, mode, editor]);
 
   const handleImageUpload = async (file: File, alt: string) => {
     try {

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router";
+import { LayoutList, FolderTree } from "lucide-react";
 import { useRepoTree } from "@/hooks/useRepoTree";
 import { FileTree } from "@/components/filebrowser/FileTree";
+import { ContentView } from "@/components/filebrowser/ContentView";
 import { apiClient } from "@/api/client";
 import type { GitHubBranch } from "@blogeditor/shared";
 import {
@@ -12,10 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
+type ViewMode = "content" | "files";
+
 export const BrowserPage = () => {
   const { owner, repo } = useParams<{ owner: string; repo: string }>();
   const [branches, setBranches] = useState<GitHubBranch[]>([]);
   const [branch, setBranch] = useState("");
+  const [view, setView] = useState<ViewMode>("content");
   const { tree, isLoading, error, refetch } = useRepoTree(owner!, repo!, branch);
 
   useEffect(() => {
@@ -42,22 +47,45 @@ export const BrowserPage = () => {
           {owner}/{repo}
         </h1>
 
-        {branches.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                {branch}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {branches.map((b) => (
-                <DropdownMenuItem key={b.name} onClick={() => setBranch(b.name)}>
-                  {b.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border p-0.5">
+            <Button
+              variant={view === "content" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView("content")}
+              className="gap-1.5"
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              Content
+            </Button>
+            <Button
+              variant={view === "files" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView("files")}
+              className="gap-1.5"
+            >
+              <FolderTree className="h-3.5 w-3.5" />
+              All Files
+            </Button>
+          </div>
+
+          {branches.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  {branch}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {branches.map((b) => (
+                  <DropdownMenuItem key={b.name} onClick={() => setBranch(b.name)}>
+                    {b.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {isLoading && (
@@ -75,9 +103,13 @@ export const BrowserPage = () => {
       )}
       {error && <p className="text-destructive">{error}</p>}
       {!isLoading && !error && tree.length > 0 && (
-        <div className="rounded-lg border p-2">
-          <FileTree items={tree} owner={owner!} repo={repo!} branch={branch} onDuplicate={refetch} />
-        </div>
+        view === "content" ? (
+          <ContentView items={tree} owner={owner!} repo={repo!} branch={branch} onDuplicate={refetch} />
+        ) : (
+          <div className="rounded-lg border p-2">
+            <FileTree items={tree} owner={owner!} repo={repo!} branch={branch} onDuplicate={refetch} />
+          </div>
+        )
       )}
     </div>
   );
