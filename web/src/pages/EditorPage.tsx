@@ -141,7 +141,6 @@ export const EditorPage = () => {
 
   const handleFrontmatterChange = useCallback((data: Record<string, unknown>) => {
     frontmatterRef.current = data;
-    setFmVersion((v) => v + 1);
     setHasChanges(true);
   }, []);
 
@@ -559,6 +558,8 @@ export const EditorPage = () => {
               data={frontmatterRef.current}
               onChange={handleFrontmatterChange}
               onClose={() => setShowSettings(false)}
+              onImageUpload={doUpload}
+              isUploading={isUploading}
             />
           </>
         )}

@@ -1,5 +1,7 @@
+import { useState, useRef } from "react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
+import { X, Upload, Loader2 } from "lucide-react";
 
 interface FrontmatterField {
   key: string;
@@ -11,6 +13,8 @@ interface FrontmatterEditorProps {
   data: Record<string, unknown>;
   onChange: (data: Record<string, unknown>) => void;
   onClose: () => void;
+  onImageUpload?: (file: File) => Promise<{ displayUrl: string; contentUrl: string }>;
+  isUploading?: boolean;
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -84,7 +88,11 @@ const ObjectFields = ({
   </div>
 );
 
-export const FrontmatterEditor = ({ data, onChange, onClose }: FrontmatterEditorProps) => {
+export const FrontmatterEditor = ({ data, onChange, onClose, onImageUpload, isUploading }: FrontmatterEditorProps) => {
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   const fields: FrontmatterField[] = Object.entries(data).map(([key, value]) => ({
     key,
     value,
@@ -93,6 +101,20 @@ export const FrontmatterEditor = ({ data, onChange, onClose }: FrontmatterEditor
 
   const updateField = (key: string, value: unknown) => {
     onChange({ ...data, [key]: value });
+  };
+
+  const handleImageUpload = async (key: string, file: File) => {
+    if (!onImageUpload) return;
+    setUploadingField(key);
+    try {
+      const { displayUrl, contentUrl } = await onImageUpload(file);
+      updateField(key, contentUrl);
+      setPreviewUrls((prev) => ({ ...prev, [key]: displayUrl }));
+    } catch {
+      toast.error("Failed to upload image");
+    } finally {
+      setUploadingField(null);
+    }
   };
 
   if (fields.length === 0) return null;
@@ -126,15 +148,48 @@ export const FrontmatterEditor = ({ data, onChange, onClose }: FrontmatterEditor
                 />
               ) : type === "image" ? (
                 <div className="space-y-2">
-                  {typeof value === "string" && value && (
-                    <img src={value} alt="" className="h-20 w-full rounded-md object-cover" />
+                  {(previewUrls[key] || (typeof value === "string" && value)) && (
+                    <img
+                      src={previewUrls[key] || String(value)}
+                      alt=""
+                      className="h-20 w-full rounded-md object-cover"
+                    />
                   )}
-                  <Input
-                    value={String(value ?? "")}
-                    className="h-8 text-sm"
-                    placeholder={`Enter ${FIELD_LABELS[key] || key}...`}
-                    onChange={(e) => updateField(key, e.target.value)}
-                  />
+                  <div className="flex gap-1.5">
+                    <Input
+                      value={String(value ?? "")}
+                      className="h-8 text-sm"
+                      placeholder={`Enter ${FIELD_LABELS[key] || key}...`}
+                      onChange={(e) => updateField(key, e.target.value)}
+                    />
+                    {onImageUpload && (
+                      <>
+                        <input
+                          ref={(el) => { fileInputRefs.current[key] = el; }}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(key, file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <button
+                          type="button"
+                          disabled={isUploading}
+                          onClick={() => fileInputRefs.current[key]?.click()}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                        >
+                          {uploadingField === key ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ) : type === "date" ? (
                 <Input
